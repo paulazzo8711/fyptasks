@@ -28,7 +28,7 @@ async function stopCognitiveLoadEstimation() {
     );
     if (extension) {
       await extension.activate(); // Ensure the extension is activated
-      await vscode.commands.executeCommand(
+      return await vscode.commands.executeCommand(
         "cognitiveloadestimator.customTimeOff"
       ); // Assuming this is the correct command
     } else {
@@ -134,10 +134,13 @@ class TaskPanel {
   private readonly _panel: vscode.WebviewPanel;
   private readonly _extensionUri: vscode.Uri;
   private _disposables: vscode.Disposable[] = [];
-  private currentState: "task" | "tlx" = "task"; // Add currentState property
+  private currentState: "task" | "tlx" | "feedback" = "task"; // Add currentState property
+  public totalTasks = 10; // Total number of tasks to be completed
+  public tasksCompleted = 0; // Counter for completed tasks
 
   public static createOrShow(extensionUri: vscode.Uri) {
-    const column = vscode.ViewColumn.Two; // Opens in the right side
+    // Open in the main editor window
+    const column = vscode.ViewColumn.One; // Or vscode.ViewColumn.Active
 
     if (TaskPanel.currentPanel) {
       TaskPanel.currentPanel._panel.reveal(column);
@@ -145,14 +148,16 @@ class TaskPanel {
       const panel = vscode.window.createWebviewPanel(
         TaskPanel.viewType,
         "Task View",
-        column,
+        column, // Target the main editor area
         {
-          // Enable scripts in the webview
           enableScripts: true,
         }
       );
 
       TaskPanel.currentPanel = new TaskPanel(panel, extensionUri);
+
+      // Toggle Zen Mode after opening the webview
+      vscode.commands.executeCommand("workbench.action.toggleZenMode");
     }
   }
 
@@ -170,6 +175,7 @@ class TaskPanel {
       async (message) => {
         switch (message.command) {
           case "submitTask":
+            this.tasksCompleted++;
             console.log(
               "Submitted value: " +
                 message.text +
@@ -209,8 +215,19 @@ class TaskPanel {
               this.tempTaskData = null; // Clear temporary storage after writing
             }
 
-            this.currentState = "task"; // Back to task after TLX submission
+            // Right after incrementing tasksCompleted
+            if (this.tasksCompleted >= this.totalTasks) {
+              // All tasks are done, prepare to show feedback
+              this.currentState = "feedback"; // Assuming you use "feedback" as a state for showing the feedback form
+            } else {
+              // Proceed to the next task or TLX assessment
+              this.currentState = "task"; // or "task", depending on your logic
+            }
+
             this._update(); // Refresh to show a new task
+            break;
+          case "submitFeedback":
+            console.log("Feedback submitted", message.feedback);
             break;
         }
       },
@@ -234,13 +251,18 @@ class TaskPanel {
   }
 
   private _update() {
-    const htmlContent =
-      this.currentState === "task"
-        ? this._getHtmlForWebview(this._panel.webview)
-        : this._getTlxHtmlForWebview(this._panel.webview);
+    let htmlContent = "";
+    if (this.currentState === "task" && this.tasksCompleted < this.totalTasks) {
+      htmlContent = this._getHtmlForWebview(this._panel.webview) || "";
+    } else if (this.currentState === "tlx") {
+      htmlContent = this._getTlxHtmlForWebview(this._panel.webview) || "";
+    } else if (this.tasksCompleted === this.totalTasks) {
+      htmlContent = this._getFeedbackHtmlForWebview(this._panel.webview) || "";
+    }
 
     this._panel.webview.html = htmlContent || "";
   }
+
   public imageIndex = 0;
   private _getHtmlForWebview(webview: vscode.Webview) {
     startCognitiveLoadEstimation();
@@ -416,5 +438,35 @@ class TaskPanel {
       <script src="${scriptUri}"></script>
   </body>
   </html>`;
+  }
+  private _getFeedbackHtmlForWebview(webview: vscode.Webview) {
+    const scriptUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this._extensionUri, "media", "feedback.js")
+    );
+    // Similar setup for scripts and styles as in _getHtmlForWebview
+    const bootstrapCssUri =
+      "https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css";
+
+    return `<!DOCTYPE html>
+  <html lang="en">
+  <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="${bootstrapCssUri}" rel="stylesheet">
+  <title>Task View</title>
+</head>
+      <!-- Head content including bootstrap CSS -->
+    </head>
+    <body>
+      <div class="container">
+        <h2>Tasks Complete</h2>
+        <p>Please provide your feedback below:</p>
+        <textarea id="feedback" class="form-control" rows="5"></textarea>
+        <button id="submitFeedback" class="btn btn-primary mt-2">Submit Feedback</button>
+      </div>
+      <!-- Include your script for handling feedback submission -->
+      <script src="${scriptUri}"></script>
+    </body>
+    </html>`;
   }
 }
