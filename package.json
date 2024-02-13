@@ -1,8 +1,9 @@
 {
   "name": "fyptasks",
   "displayName": "FYPTasks",
-  "description": "",
-  "version": "0.0.1",
+  "publisher": "paulazzopardi",
+  "description": "Tasks designed to test cognitiveloadestimator extension.",
+  "version": "1.0.0",
   "engines": {
     "vscode": "^1.86.0"
   },
@@ -13,6 +14,10 @@
     "onStartupFinished",
     "command:fyptasks.showTasks"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/paulazzo8711/fyptasks"
+  },
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
