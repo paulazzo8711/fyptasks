@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 const ExcelJS = require("exceljs");
 const fs = require("fs");
 const path = require("path");
+let statusBarBtn: vscode.StatusBarItem;
 async function startCognitiveLoadEstimation() {
   console.log("Starting cognitive load estimation...");
   try {
@@ -111,14 +112,26 @@ async function writeToExcel(data: {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-  context.subscriptions.push(
-    vscode.commands.registerCommand("fyptasks.showTasks", () => {
+  statusBarBtn = vscode.window.createStatusBarItem(
+    vscode.StatusBarAlignment.Left
+  );
+  statusBarBtn.command = "fyptasks.showTask";
+  statusBarBtn.text = "$(checklist) Begin Tasks";
+  statusBarBtn.tooltip = "Click to begin tasks";
+  statusBarBtn.show();
+
+  let toggleEstimationDisposable = vscode.commands.registerCommand(
+    "fyptasks.showTask",
+    () => {
+      // Logic to show or start tasks goes here
       TaskPanel.createOrShow(context.extensionUri);
-    })
+    }
   );
 
+  context.subscriptions.push(toggleEstimationDisposable);
+
   // Automatically show tasks when the extension is activated
-  vscode.commands.executeCommand("fyptasks.showTasks");
+  // vscode.commands.executeCommand("fyptasks.showTasks");
 }
 exports.activate = activate;
 class TaskPanel {
@@ -157,7 +170,7 @@ class TaskPanel {
       TaskPanel.currentPanel = new TaskPanel(panel, extensionUri);
 
       // Toggle Zen Mode after opening the webview
-      vscode.commands.executeCommand("workbench.action.toggleZenMode");
+      // vscode.commands.executeCommand("workbench.action.toggleZenMode");
     }
   }
 
