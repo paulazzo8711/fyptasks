@@ -1,0 +1,1 @@
+A palindrome is a word that reads the same backwards and forward, such as "level". The following program is meant to return a list of palindromes in a given set of words. Find and describe any bug(s) in the code snippet.

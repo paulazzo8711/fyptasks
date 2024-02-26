@@ -10,10 +10,10 @@ async function startCognitiveLoadEstimation() {
       "paulazzopardi.cognitiveloadestimator"
     );
     if (extension) {
-      await extension.activate(); // Ensure the extension is activated
+      await extension.activate();
       await vscode.commands.executeCommand(
         "cognitiveloadestimator.customTimeOn"
-      ); // Corrected command
+      );
     } else {
       console.error("Extension not found.");
     }
@@ -28,10 +28,10 @@ async function stopCognitiveLoadEstimation() {
       "paulazzopardi.cognitiveloadestimator"
     );
     if (extension) {
-      await extension.activate(); // Ensure the extension is activated
+      await extension.activate();
       return await vscode.commands.executeCommand(
         "cognitiveloadestimator.customTimeOff"
-      ); // Assuming this is the correct command
+      );
     } else {
       console.error("Extension not found.");
     }
@@ -50,7 +50,7 @@ async function writeToExcel(data: {
   mean: any;
   value: any;
   time: any;
-  image: any;
+  taskNumber: any;
   tlxScores: any;
   cognitiveLoad: any;
 }) {
@@ -60,33 +60,24 @@ async function writeToExcel(data: {
   console.log("Writing to Excel file...", data);
 
   try {
-    // Check if the file exists
     if (fs.existsSync(filePath)) {
-      // If the file exists, load the existing workbook
       await workbook.xlsx.readFile(filePath);
     } else {
-      // Ensure the directory exists
       if (!fs.existsSync(desktopPath)) {
         fs.mkdirSync(desktopPath, { recursive: true });
       }
-      // If the file doesn't exist, add a new worksheet
       workbook.addWorksheet("Task Data");
     }
 
-    // Get the worksheet, if it doesn't exist create a new one
     let sheet =
       workbook.getWorksheet("Task Data") || workbook.addWorksheet("Task Data");
-
-    // Check if the worksheet has columns defined, if not define them
-    // if (!sheet.columns || sheet.columns.length === 0) {
-    //   console.log("Defining columns");
 
     sheet.columns = [
       { header: "Submitted Value", key: "value", width: 30 },
       { header: "Time Taken (Seconds)", key: "time", width: 20 },
-      { header: "Task Image Link", key: "image", width: 50 },
+      { header: "Task Number", key: "taskNumber", width: 50 },
       { header: "Predicted Load", key: "cognitiveLoad", width: 15 },
-      // Define columns for each TLX score
+
       { header: "Mental Demand", key: "mentalDemand", width: 15 },
       { header: "Physical Demand", key: "physicalDemand", width: 15 },
       { header: "Temporal Demand", key: "temporalDemand", width: 15 },
@@ -95,15 +86,9 @@ async function writeToExcel(data: {
       { header: "Frustration", key: "frustration", width: 15 },
       { header: "Mean", key: "mean", width: 15 },
     ];
-    // }
 
-    // Add a row
     sheet.addRow(data);
 
-    // Commit changes to the workbook
-    // await workbook.commit();
-
-    // Write back to the file
     await workbook.xlsx.writeFile(filePath);
     console.log(`File saved to ${filePath}`);
   } catch (error) {
@@ -123,15 +108,11 @@ export function activate(context: vscode.ExtensionContext) {
   let toggleEstimationDisposable = vscode.commands.registerCommand(
     "fyptasks.showTask",
     () => {
-      // Logic to show or start tasks goes here
       TaskPanel.createOrShow(context.extensionUri);
     }
   );
 
   context.subscriptions.push(toggleEstimationDisposable);
-
-  // Automatically show tasks when the extension is activated
-  // vscode.commands.executeCommand("fyptasks.showTasks");
 }
 exports.activate = activate;
 class TaskPanel {
@@ -140,20 +121,19 @@ class TaskPanel {
   public tempTaskData: {
     value: any;
     time: any;
-    image: any;
+    taskNumber: any;
     tlxScores: any;
     cognitiveLoad: any;
   } | null = null;
   private readonly _panel: vscode.WebviewPanel;
   private readonly _extensionUri: vscode.Uri;
   private _disposables: vscode.Disposable[] = [];
-  private currentState: "task" | "tlx" | "feedback" = "task"; // Add currentState property
-  public totalTasks = 10; // Total number of tasks to be completed
-  public tasksCompleted = 0; // Counter for completed tasks
+  private currentState: "task" | "tlx" | "feedback" = "task";
+  public totalTasks = 11;
+  public tasksCompleted = 0;
 
   public static createOrShow(extensionUri: vscode.Uri) {
-    // Open in the main editor window
-    const column = vscode.ViewColumn.One; // Or vscode.ViewColumn.Active
+    const column = vscode.ViewColumn.One;
 
     if (TaskPanel.currentPanel) {
       TaskPanel.currentPanel._panel.reveal(column);
@@ -161,16 +141,13 @@ class TaskPanel {
       const panel = vscode.window.createWebviewPanel(
         TaskPanel.viewType,
         "Task View",
-        column, // Target the main editor area
+        column,
         {
           enableScripts: true,
         }
       );
 
       TaskPanel.currentPanel = new TaskPanel(panel, extensionUri);
-
-      // Toggle Zen Mode after opening the webview
-      // vscode.commands.executeCommand("workbench.action.toggleZenMode");
     }
   }
 
@@ -182,8 +159,6 @@ class TaskPanel {
 
     this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
-    // Handle messages from the webview
-    // Inside TaskPanel's message handling
     this._panel.webview.onDidReceiveMessage(
       async (message) => {
         switch (message.command) {
@@ -194,25 +169,24 @@ class TaskPanel {
                 message.text +
                 ", Time taken: " +
                 message.timeTaken +
-                " Seconds, Task Image Link: " +
-                message.image
+                " Seconds, Task : " +
+                message.taskNumber
             );
             stopCognitiveLoadEstimation().then((cognitiveLoadData) => {
               this.tempTaskData = {
                 value: message.text,
                 time: message.timeTaken,
-                image: message.image,
+                taskNumber: message.taskNumber,
                 tlxScores: null,
                 cognitiveLoad: cognitiveLoadData,
               };
-              this.currentState = "tlx"; // Proceed to TLX after task submission
+              this.currentState = "tlx";
 
-              this._update(); // Refresh the view to show TLX form
+              this._update();
             });
             break;
           case "submitTLX":
             console.log("TLX Scores submitted", message.scores);
-            // Combine TLX data with temporary task data and write to Excel
 
             if (this.tempTaskData) {
               writeToExcel({
@@ -225,22 +199,20 @@ class TaskPanel {
                 frustration: message.scores.frustration,
                 mean: message.scores.mean,
               });
-              this.tempTaskData = null; // Clear temporary storage after writing
+              this.tempTaskData = null;
             }
-
-            // Right after incrementing tasksCompleted
+            this.taskNumber++;
             if (this.tasksCompleted >= this.totalTasks) {
-              // All tasks are done, prepare to show feedback
-              this.currentState = "feedback"; // Assuming you use "feedback" as a state for showing the feedback form
+              this.currentState = "feedback";
             } else {
-              // Proceed to the next task or TLX assessment
-              this.currentState = "task"; // or "task", depending on your logic
+              this.currentState = "task";
             }
 
-            this._update(); // Refresh to show a new task
+            this._update();
             break;
           case "submitFeedback":
             console.log("Feedback submitted", message.feedback);
+            this._panel.dispose();
             break;
         }
       },
@@ -252,7 +224,6 @@ class TaskPanel {
   public dispose() {
     TaskPanel.currentPanel = undefined;
 
-    // Clean up our resources
     this._panel.dispose();
 
     while (this._disposables.length) {
@@ -263,36 +234,48 @@ class TaskPanel {
     }
   }
 
-  private _update() {
+  private async _update() {
     let htmlContent = "";
     if (this.currentState === "task" && this.tasksCompleted < this.totalTasks) {
-      htmlContent = this._getHtmlForWebview(this._panel.webview) || "";
+      htmlContent = (await this._getHtmlForWebview(this._panel.webview)) || "";
     } else if (this.currentState === "tlx") {
-      htmlContent = this._getTlxHtmlForWebview(this._panel.webview) || "";
+      htmlContent =
+        (await this._getTlxHtmlForWebview(this._panel.webview)) || "";
     } else if (this.tasksCompleted === this.totalTasks) {
-      htmlContent = this._getFeedbackHtmlForWebview(this._panel.webview) || "";
+      htmlContent =
+        (await this._getFeedbackHtmlForWebview(this._panel.webview)) || "";
     }
 
     this._panel.webview.html = htmlContent || "";
   }
 
-  public imageIndex = 0;
-  private _getHtmlForWebview(webview: vscode.Webview) {
+  public taskNumber = 0;
+
+  private async _getHtmlForWebview(webview: vscode.Webview) {
     startCognitiveLoadEstimation();
-    // Determine whether to show a task or the TLX page based on the extension state.
 
     if (this.currentState === "task") {
-      // Task view setup
-      const imageNumber = this.imageIndex + 1;
-      this.imageIndex = imageNumber;
-      const imageUri = webview.asWebviewUri(
-        vscode.Uri.joinPath(
-          this._extensionUri,
-          "media",
-          "taskImages",
-          `image${imageNumber}.png`
-        )
+      const taskNumber = this.taskNumber + 1;
+
+      const taskPath = path.join(
+        this._extensionUri.fsPath,
+        "media",
+        "tasks",
+        `task${taskNumber}`
       );
+
+      const descriptionPath = path.join(taskPath, "description.txt");
+      const codePath = path.join(taskPath, "code.java");
+
+      const description = await vscode.workspace.fs.readFile(
+        vscode.Uri.file(descriptionPath)
+      );
+      const code = await vscode.workspace.fs.readFile(
+        vscode.Uri.file(codePath)
+      );
+
+      const descriptionText = Buffer.from(description).toString("utf8");
+      const codeText = Buffer.from(code).toString("utf8");
       const scriptUri = webview.asWebviewUri(
         vscode.Uri.joinPath(this._extensionUri, "media", "main.js")
       );
@@ -305,63 +288,80 @@ class TaskPanel {
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <link href="${bootstrapCssUri}" rel="stylesheet">
+      <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css" rel="stylesheet" />
+
       <title>Task View</title>
       <style>
-          .container-fluid {
-              padding: 20px;
-          }
-          #result {
-              height: 100px; /* Make the input box taller */
-          }
-          .timer-bar {
-              height: 30px;
-              transition: width 1s ease-in-out;
-          }
-          .alert-timer {
-              color: red; /* Change text color to red for alerts */
-          }
-          .col-md-6{
-            padding-top: 60px;
-          }
-      </style>
+      .container-fluid {
+          padding: 20px;
+      }
+      #result {
+          height: 100px; /* Make the input box taller */
+      }
+      .timer-bar {
+          height: 30px;
+          transition: width 1s ease-in-out;
+      }
+      .alert-timer {
+          color: red; /* Change text color to red for alerts */
+      }
+      .col-md-6{
+        padding-top: 60px;
+      }
+      .description-text {
+        font-size: 1.2em;
+        line-height: 1.6;
+        color: #333;
+      }
+      .question-number {
+        font-size: 2em;
+        font-weight: bold;
+        margin-bottom: 20px;
+      }
+  </style>
   </head>
-  
+
   <body>
   <div class="container-fluid">
-    <div class="row">
-      <div class="col-md-12 text-center">
-        <p><strong>Timer:</strong> <span id="timer">03:00</span></p>
-        <!-- Timer progress bar -->
-        <div class="progress">
-            <div class="progress-bar timer-bar" role="progressbar" style="width: 100%" id="timerBar"></div>
-        </div>
+  <div class="row">
+    <div class="col-md-12 text-center">
+      <p class="question-number">Question ${taskNumber}</p>
+      <p><strong>Timer:</strong> <span id="timer">03:00</span></p>
+      <!-- Timer progress bar -->
+      <div class="progress">
+          <div class="progress-bar timer-bar" role="progressbar" style="width: 100%" id="timerBar"></div>
       </div>
     </div>
-    <div class="row">
-        <div class="col-md-6">
-            <img src="${imageUri}" class="img-fluid" alt="Task Image" id="taskImage">
-            <p>Task description here.</p>
-        </div>
+  </div>
+  <div class="row">
+      <div class="col-md-6">
+          <pre><code class="language-java">${codeText}</code></pre>
+          <p class="description-text">${descriptionText}</p>
+      </div>
         <div class="col-md-6 d-flex flex-column justify-content-between">
             <textarea id="result" class="form-control mb-2" placeholder="Enter your result" style="flex-grow: 1;"></textarea>
             <button id="submit" class="btn btn-primary btn-block">Submit</button>
         </div>
     </div>
+    <div class="row">
+    <div class="col-md-6">
+
+    </div>
+</div>
   </div>
   <script src="${scriptUri}"></script>
   <script>
-    window.onload = function() {
-      // Ensure the image is loaded to get its height
-      const imageHeight = document.getElementById('taskImage').clientHeight;
-      document.getElementById('result').style.height = imageHeight + 'px';
-    };
-  </script>
-</body>
+  const vscode = acquireVsCodeApi();
+  const taskNumber = ${taskNumber};
+</script>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-java.min.js"></script>
+
+</body>
 
       </html>`;
     } else if (this.currentState === "tlx") {
-      // Call a separate function to get the HTML for the TLX page
       return this._getTlxHtmlForWebview(webview);
     }
   }
@@ -444,9 +444,9 @@ class TaskPanel {
             <button type="submit" id="submitTlx" class="btn btn-primary mt-2">Submit</button>
           </div>
         </div>
-        
+
         </form>
-        
+
       </div>
       <script src="${scriptUri}"></script>
   </body>
@@ -456,7 +456,6 @@ class TaskPanel {
     const scriptUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this._extensionUri, "media", "feedback.js")
     );
-    // Similar setup for scripts and styles as in _getHtmlForWebview
     const bootstrapCssUri =
       "https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css";
 

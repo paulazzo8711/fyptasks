@@ -2,9 +2,8 @@ const vscode = acquireVsCodeApi();
 console.log("TLX script loaded");
 
 document.getElementById("tlxForm").addEventListener("submit", (e) => {
-  e.preventDefault(); // Prevent the default form submission via HTTP
+  e.preventDefault();
 
-  // Collect TLX scores
   const mentalDemand = parseInt(
     document.getElementById("mentalDemand").value,
     10
@@ -27,7 +26,6 @@ document.getElementById("tlxForm").addEventListener("submit", (e) => {
     10
   );
 
-  // Calculate mean of the scores
   const scoresArray = [
     mentalDemand,
     physicalDemand,
@@ -39,7 +37,6 @@ document.getElementById("tlxForm").addEventListener("submit", (e) => {
   const sum = scoresArray.reduce((a, b) => a + b, 0);
   const mean = sum / scoresArray.length;
 
-  // Post message back to the extension with the collected scores and their mean
   vscode.postMessage({
     command: "submitTLX",
     scores: {

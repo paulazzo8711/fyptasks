@@ -1,0 +1,1 @@
+A chain is a sequence of numbers that are strictly increasing. That is, each number in the chain is greater than the previous number in the chain. Find and describe any bug(s) in the code snippet
