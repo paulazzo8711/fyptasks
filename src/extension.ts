@@ -29,9 +29,12 @@ async function stopCognitiveLoadEstimation() {
     );
     if (extension) {
       await extension.activate();
+      console.log("Extension activated.");
+
       return await vscode.commands.executeCommand(
         "cognitiveloadestimator.customTimeOff"
       );
+      console.log("Command executed.");
     } else {
       console.error("Extension not found.");
     }
@@ -77,7 +80,6 @@ async function writeToExcel(data: {
       { header: "Time Taken (Seconds)", key: "time", width: 20 },
       { header: "Task Number", key: "taskNumber", width: 50 },
       { header: "Predicted Load", key: "cognitiveLoad", width: 15 },
-
       { header: "Mental Demand", key: "mentalDemand", width: 15 },
       { header: "Physical Demand", key: "physicalDemand", width: 15 },
       { header: "Temporal Demand", key: "temporalDemand", width: 15 },
@@ -85,9 +87,19 @@ async function writeToExcel(data: {
       { header: "Effort", key: "effort", width: 15 },
       { header: "Frustration", key: "frustration", width: 15 },
       { header: "Mean", key: "mean", width: 15 },
+      { header: "Date", key: "date", width: 15 },
+      { header: "Timestamp", key: "timestamp", width: 15 },
     ];
 
-    sheet.addRow(data);
+    const date = new Date();
+    const dateString = date.toLocaleDateString();
+    const timestampString = date.toLocaleTimeString();
+
+    sheet.addRow({
+      ...data,
+      date: dateString,
+      timestamp: timestampString,
+    });
 
     await workbook.xlsx.writeFile(filePath);
     console.log(`File saved to ${filePath}`);
@@ -172,6 +184,8 @@ class TaskPanel {
                 " Seconds, Task : " +
                 message.taskNumber
             );
+            this.currentState = "tlx";
+            this._update();
             stopCognitiveLoadEstimation().then((cognitiveLoadData) => {
               this.tempTaskData = {
                 value: message.text,
@@ -180,7 +194,6 @@ class TaskPanel {
                 tlxScores: null,
                 cognitiveLoad: cognitiveLoadData,
               };
-              this.currentState = "tlx";
 
               this._update();
             });
@@ -400,21 +413,21 @@ class TaskPanel {
             </div>
           </div>
           <div class="form-group">
-            <label for="physicalDemand class="text-center""><strong>Physical Demand:</strong> How physically demanding was the task?</label>
-            <div class="d-flex justify-content-between">
-              <span>Very Low</span>
-              <input type="range" class="form-control-range" id="physicalDemand">
-              <span>Very High</span>
-            </div>
+          <label for="physicalDemand" class="text-center"><strong>Physical Demand:</strong> How physically demanding was the task?</label>
+          <div class="d-flex justify-content-between">
+            <span>Very Low</span>
+            <input type="range" class="form-control-range" id="physicalDemand">
+            <span>Very High</span>
           </div>
-          <div class="form-group">
-            <label for="temporalDemand class="text-center""><strong>Temporal Demand:</strong> How hurried or rushed was the pace of the task?</label>
-            <div class="d-flex justify-content-between">
-              <span>Very Low</span>
-              <input type="range" class="form-control-range" id="temporalDemand">
-              <span>Very High</span>
-            </div>
+        </div>
+        <div class="form-group">
+          <label for="temporalDemand" class="text-center"><strong>Temporal Demand:</strong> How hurried or rushed was the pace of the task?</label>
+          <div class="d-flex justify-content-between">
+            <span>Very Low</span>
+            <input type="range" class="form-control-range" id="temporalDemand">
+            <span>Very High</span>
           </div>
+        </div>
           <div class="form-group">
             <label for="performance" class="text-center"><strong>Performance:</strong> How successful were you in accomplishing what you were asked to do?</label>
             <div class="d-flex justify-content-between">
