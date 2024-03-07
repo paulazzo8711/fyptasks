@@ -3,7 +3,7 @@
   "displayName": "FYPTasks",
   "publisher": "paulazzopardi",
   "description": "Tasks designed to test cognitiveloadestimator extension.",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "engines": {
     "vscode": "^1.86.0"
   },

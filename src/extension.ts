@@ -408,7 +408,7 @@ class TaskPanel {
             <label for="mentalDemand" class="text-center"><strong>Mental Demand:</strong> How mentally demanding was the task?</label>
             <div class="d-flex justify-content-between">
               <span>Very Low</span>
-              <input type="range" class="form-control-range" id="mentalDemand">
+              <input type="range" class="form-control-range" min="0" max="100" step="5" value="0" id="mentalDemand">
               <span>Very High</span>
             </div>
           </div>
@@ -416,7 +416,7 @@ class TaskPanel {
           <label for="physicalDemand" class="text-center"><strong>Physical Demand:</strong> How physically demanding was the task?</label>
           <div class="d-flex justify-content-between">
             <span>Very Low</span>
-            <input type="range" class="form-control-range" id="physicalDemand">
+            <input type="range" class="form-control-range" min="0" max="100" step="5" value="0" id="physicalDemand">
             <span>Very High</span>
           </div>
         </div>
@@ -424,23 +424,23 @@ class TaskPanel {
           <label for="temporalDemand" class="text-center"><strong>Temporal Demand:</strong> How hurried or rushed was the pace of the task?</label>
           <div class="d-flex justify-content-between">
             <span>Very Low</span>
-            <input type="range" class="form-control-range" id="temporalDemand">
+            <input type="range" class="form-control-range" min="0" max="100" step="5" value="0" id="temporalDemand">
             <span>Very High</span>
           </div>
         </div>
           <div class="form-group">
             <label for="performance" class="text-center"><strong>Performance:</strong> How successful were you in accomplishing what you were asked to do?</label>
             <div class="d-flex justify-content-between">
-              <span>Very Low</span>
-              <input type="range" class="form-control-range" id="performance">
-              <span>Very High</span>
+              <span>Perfect</span>
+              <input type="range" class="form-control-range" min="0" max="100" step="5" value="0" id="performance">
+              <span>Failure</span>
             </div>
           </div>
           <div class="form-group">
             <label for="effort" class="text-center"><strong>Effort:</strong> How hard did you have to work to accomplish your level of performance?</label>
             <div class="d-flex justify-content-between">
               <span>Very Low</span>
-              <input type="range" class="form-control-range" id="effort">
+              <input type="range" class="form-control-range" min="0" max="100" step="5" value="0" id="effort">
               <span>Very High</span>
             </div>
           </div>
@@ -448,7 +448,7 @@ class TaskPanel {
             <label for="frustration" class="text-center"><strong>Frustration:</strong> How insecure, discouraged, irritated, stressed, and annoyed versus secure, gratified, content, relaxed, and complacent did you feel during the task?</label>
             <div class="d-flex justify-content-between">
               <span>Very Low</span>
-              <input type="range" class="form-control-range" id="frustration">
+              <input type="range" class="form-control-range" min="0" max="100" step="5" value="0" id="frustration">
               <span>Very High</span>
             </div>
           </div>
