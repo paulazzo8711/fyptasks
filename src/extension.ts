@@ -289,6 +289,11 @@ class TaskPanel {
 
       const descriptionText = Buffer.from(description).toString("utf8");
       const codeText = Buffer.from(code).toString("utf8");
+      const codeLines = codeText.split("\n");
+      const codeWithLineNumbers = codeLines
+        .map((line, index) => `${index + 1} ${line}`)
+        .join("\n");
+
       const scriptUri = webview.asWebviewUri(
         vscode.Uri.joinPath(this._extensionUri, "media", "main.js")
       );
@@ -348,8 +353,9 @@ class TaskPanel {
   </div>
   <div class="row">
       <div class="col-md-6">
-          <pre><code class="language-java">${codeText}</code></pre>
-          <p class="description-text">${descriptionText}</p>
+      <p class="description-text">${descriptionText}</p>
+      <pre><code class="language-java">${codeWithLineNumbers}</code></pre>
+          
       </div>
         <div class="col-md-6 d-flex flex-column justify-content-between">
             <textarea id="result" class="form-control mb-2" placeholder="Enter your result" style="flex-grow: 1;"></textarea>
